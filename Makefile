@@ -9,7 +9,7 @@ TAG = 0.1.0
 
 # Build variables
 BUILD_DIR ?= build
-BUILD_PACKAGE = ${PACKAGE}/cmd/scheduler
+BUILD_PACKAGE = ${PACKAGE}
 VERSION ?= $(shell git rev-parse --abbrev-ref HEAD)
 COMMIT_HASH ?= $(shell git rev-parse --short HEAD 2>/dev/null)
 BUILD_DATE ?= $(shell date +%FT%T%z)

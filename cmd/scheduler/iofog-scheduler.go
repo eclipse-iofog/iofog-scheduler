@@ -99,8 +99,7 @@ func newScheduler(podQueue chan *v1.Pod) Scheduler {
 		podQueue:   podQueue,
 		nodeLister: initInformers(clientset, podQueue),
 		predicates: []predicateFunc{
-			nodeNamePredicate,
-			capacityPredicate,
+			nodePredicate,
 		},
 		priorities: []priorityFunc{
 			lessPodsPriority,
@@ -154,15 +153,25 @@ func lessPodsPriority(node *v1.Node, pod *v1.Pod) int {
 }
 
 func init() {
-	RootCmd.PersistentFlags().StringVar(&kubeConfig, "kubeconfig", "$HOME/.kube/config", "config file (default is $HOME/.kube/config)")
+	RootCmd.PersistentFlags().StringVar(&kubeConfig, "kubeconfig", "", "config file (default is $HOME/.kube/config)")
 }
 
-func nodeNamePredicate(node *v1.Node, pod *v1.Pod) bool {
-	return strings.HasPrefix(node.Name, "iofog-")
-}
+func nodePredicate(node *v1.Node, pod *v1.Pod) bool {
+	if !strings.HasPrefix(node.Name, "iofog-") {
+		return false
+	}
 
-func capacityPredicate(node *v1.Node, pod *v1.Pod) bool {
-	return node.Status.Allocatable.Pods().Value() > 0
+	if node.Status.Allocatable.Pods().Value() <= 0 {
+		return false
+	}
+
+	for _, status := range node.Status.Conditions {
+		if status.Status == "True" && status.Type == "Ready" {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (s *Scheduler) Run() {

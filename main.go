@@ -11,7 +11,7 @@
  *
  */
 
-package iofog_scheduler
+package main
 
 import (
 	"github.com/iofog/iofog-scheduler/cmd/scheduler"
