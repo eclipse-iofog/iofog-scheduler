@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iofog-scheduler
+  labels:
+    app: iofog-scheduler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: iofog-scheduler
+  template:
+    metadata:
+      labels:
+        app: iofog-scheduler
+    spec:
+      serviceAccount: iofog-scheduler
+      containers:
+        - name: iofog-scheduler
+          image: iofog/iofog-scheduler:0.1.0
+          imagePullPolicy: Always
