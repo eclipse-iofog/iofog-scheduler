@@ -50,6 +50,8 @@ type Scheduler struct {
 	priorities []priorityFunc
 }
 
+var deletedPods map[string]bool
+var rescheduleDelay int
 var kubeConfig string
 var rootContext, rootContextCancel = context.WithCancel(context.Background())
 
@@ -132,6 +134,14 @@ func initInformers(clientset *kubernetes.Clientset, podQueue chan *v1.Pod) liste
 				podQueue <- pod
 			}
 		},
+		DeleteFunc: func(obj interface{}) {
+			pod, ok := obj.(*v1.Pod)
+			if !ok {
+				return
+			}
+
+			deletedPods[pod.Name] = true
+		},
 	})
 
 	factory.Start(rootContext.Done())
@@ -140,6 +150,8 @@ func initInformers(clientset *kubernetes.Clientset, podQueue chan *v1.Pod) liste
 
 func execute() {
 	fmt.Println("starting iofog-scheduler!")
+
+	deletedPods = make(map[string]bool)
 
 	podQueue := make(chan *v1.Pod, 300)
 	defer close(podQueue)
@@ -153,6 +165,7 @@ func lessPodsPriority(node *v1.Node, pod *v1.Pod) int {
 }
 
 func init() {
+	RootCmd.PersistentFlags().IntVar(&rescheduleDelay, "reschedule", 5, "pods re-schedule delay (seconds)")
 	RootCmd.PersistentFlags().StringVar(&kubeConfig, "kubeconfig", "", "config file (default is $HOME/.kube/config)")
 }
 
@@ -174,24 +187,38 @@ func nodePredicate(node *v1.Node, pod *v1.Pod) bool {
 	return false
 }
 
+func (s *Scheduler) Error(pod *v1.Pod, msg string, err error) {
+	log.Println(msg, err.Error())
+	go func() {
+		time.Sleep(time.Duration(rescheduleDelay) * time.Second)
+
+		// Check if pod has been deleted while we were waiting
+		if _, ok := deletedPods[pod.Name]; ok {
+			delete(deletedPods, pod.Name)
+		} else {
+			log.Printf("re-scheduling pod: %s\n", pod.Name)
+			s.podQueue <- pod
+		}
+	}()
+}
+
 func (s *Scheduler) Run() {
 	wait.Until(s.ScheduleOne, 0, rootContext.Done())
 }
 
 func (s *Scheduler) ScheduleOne() {
-
 	p := <-s.podQueue
 	fmt.Println("found a pod to schedule:", p.Namespace, "/", p.Name)
 
 	node, err := s.findFit(p)
-	if err != nil {
-		log.Println("cannot find node that fits pod", err.Error())
+	if err != nil || node == "" {
+		s.Error(p, "cannot find node that fits pod", err)
 		return
 	}
 
 	err = s.bindPod(p, node)
 	if err != nil {
-		log.Println("failed to bind pod", err.Error())
+		s.Error(p, "failed to bind pod", err)
 		return
 	}
 
