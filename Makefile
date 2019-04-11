@@ -24,6 +24,9 @@ DEP_VERSION = 0.5.0
 GOLANG_VERSION = 1.11
 GOFILES_NOVENDOR = $(shell find . -type f -name '*.go' -not -path "./vendor/*" -not -path "./client/*")
 
+BRANCH ?= $(TRAVIS_BRANCH)
+RELEASE_TAG ?= 0.0.0
+
 # Golang build targets
 .PHONY: clean
 clean: ## Clean the working area and the project
