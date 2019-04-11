@@ -2,7 +2,7 @@ SHELL = /bin/bash
 OS = $(shell uname -s)
 
 # Project variables
-PACKAGE = github.com/iofog/iofog-scheduler
+PACKAGE = github.com/eclipse-iofog/iofog-scheduler
 BINARY_NAME = iofog-scheduler
 IMAGE = iofog/iofog-scheduler
 TAG ?= dev
@@ -62,7 +62,7 @@ test:
 # Docker targets
 .PHONY: build-img
 build-img: ## Builds docker image for the scheduler
-	docker build --rm -t $(IMAGE):$(TAG) -f build/Dockerfile .
+	docker build --rm -t $(IMAGE):latest -f build/Dockerfile .
 
 .PHONY: push-img
 push-img:

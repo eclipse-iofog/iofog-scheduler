@@ -14,7 +14,7 @@
 package main
 
 import (
-	"github.com/iofog/iofog-scheduler/cmd/scheduler"
+	"github.com/eclipse-iofog/iofog-scheduler/cmd/scheduler"
 	"log"
 )
 
