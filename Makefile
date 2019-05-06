@@ -62,7 +62,7 @@ test:
 # Docker targets
 .PHONY: build-img
 build-img: ## Builds docker image for the scheduler
-	docker build --rm -t $(IMAGE):latest -f build/Dockerfile .
+	docker build --rm -t $(IMAGE):latest -f Dockerfile .
 
 .PHONY: push-img
 push-img:
